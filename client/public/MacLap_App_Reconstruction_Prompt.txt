@@ -1,0 +1,229 @@
+# MacLap Cash Tracking App - Complete Reconstruction Prompt
+
+Build a comprehensive business cash tracking and financial management application for MacLap business with the following exact specifications:
+
+## App Overview
+Create a React-based cash tracking and note-taking application that provides real-time financial management with enhanced user experience and mobile-friendly design. This is a professional business management tool for tracking daily cash flow, pending payments, meter readings, and business notes.
+
+## Technology Stack Required
+- Frontend: React 18 + TypeScript + Vite for build tooling
+- Routing: Wouter for lightweight client-side routing  
+- Database: Firebase Firestore for real-time data synchronization
+- UI Framework: Shadcn/ui component library with Radix UI primitives
+- Styling: Tailwind CSS with responsive design and gradient backgrounds
+- State Management: Zustand for authentication + TanStack Query for server state
+- Offline Support: IndexedDB integration with automatic sync
+- Additional: Express.js backend for server-side operations
+
+## Authentication System
+Create a dual-user authentication system with these exact credentials:
+- User 1: Username "Puneet", Password "maclap2102", Role "super_admin"
+- User 2: Username "Sonu", Password "maclap9811", Role "admin"
+
+Authentication Features:
+- Password-based login with user selection buttons
+- WebAuthn fingerprint authentication (registration + login)
+- Role-based permissions (super admin can edit today's transactions)
+- Session persistence using Zustand with localStorage
+- Logout functionality
+
+## Core Application Structure
+
+### Main Navigation (Bottom Nav - 5 Tabs)
+1. Transactions (default landing page) - Cash in/out tracking with pending payments
+2. Dashboard - Analytics and financial overview with date filtering
+3. Meter Readings - Utility meter tracking and readings
+4. Notes - Business note-taking with auto-title generation
+5. Settings - App configuration, exports, and admin functions
+
+### User Interface Requirements
+- Design: Professional business app with gradient backgrounds (blue-purple theme)
+- Mobile Optimization: Responsive design for OnePlus 9RT, OnePlus 11R, Samsung Galaxy S24 Ultra
+- PWA Configuration: Custom MacLap icon, web app manifest, offline capability
+- Audio Feedback: Web Audio API sounds for cash in/out actions with toggle setting
+
+## Data Models (Firebase Firestore Collections)
+
+### 1. Transactions Collection
+{
+  type: "in" | "out",           // Cash flow direction
+  amount: number,               // Transaction amount
+  date: string,                 // YYYY-MM-DD format
+  remark: string,               // Transaction description
+  user: string,                 // "Puneet" or "Sonu"
+  timestamp: number,            // Unix timestamp
+  id: string                    // Document ID
+}
+
+### 2. Pending Payments Collection
+{
+  partyName: string,            // Customer/party name
+  amount: number,               // Amount to be collected
+  dueDate: string,              // YYYY-MM-DD format
+  remark: string,               // Payment description
+  user: string,                 // "Puneet" or "Sonu"
+  timestamp: number,            // Creation timestamp
+  id: string                    // Document ID
+}
+
+### 3. Meter Readings Collection
+{
+  meterType: string,            // Type of meter (electricity, water, etc.)
+  reading: number,              // Current reading value
+  date: string,                 // YYYY-MM-DD format
+  remark: string,               // Additional notes
+  user: string,                 // "Puneet" or "Sonu"
+  timestamp: number,            // Unix timestamp
+  id: string                    // Document ID
+}
+
+### 4. Notes Collection
+{
+  title: string,                // Auto-generated from first line of content
+  content: string,              // Full note content
+  user: string,                 // "Puneet" or "Sonu"
+  timestamp: number,            // Creation timestamp
+  id: string                    // Document ID
+}
+
+## Detailed Feature Requirements
+
+### Transactions Page (Main/Default)
+- Quick Entry Interface: Large amount input with preset buttons (₹1400, ₹1500, ₹1800, ₹2200)
+- Cash In/Out Buttons: Green for cash in, red for cash out with audio feedback
+- Today's Transactions: Default view showing only today's entries
+- Date Filtering: Calendar picker for viewing historical transactions
+- Real-time Updates: Live Firebase listeners for instant data sync
+- Super Admin Edit: Puneet can edit today's transaction amounts, types, and remarks
+- User Assignment: Super admin can change transaction ownership
+- Tabs Integration: Include pending payments as secondary tab within transactions
+
+### Dashboard Page
+- Period Selection: Today, Yesterday, Weekly, Monthly, Yearly, Individual months (Jan-Dec)
+- Year Selector: 2023-2026 range when specific month selected
+- Analytics Cards: Total income, expenses, net profit/loss with color coding
+- User Balance Analysis: Separate tracking for Puneet vs Sonu
+- Visual Indicators: Gradient cards with profit/loss color coding
+- Search Functionality: Comprehensive search across transactions with date filtering
+- Transaction Statistics: Count and percentage breakdowns
+
+### Notes Page
+- Modern Card Layout: Glassmorphism effects with gradient backgrounds
+- Auto-Title Generation: First line of content becomes title automatically
+- Real-time Title Preview: Shows title as user types
+- Comprehensive Search: Search across titles, content, and authors
+- Edit Functionality: In-place editing of existing notes
+- Password-Protected Delete: Admin password "maclap1122" required for deletion
+- Collapsible Form: Clean interface with show/hide form functionality
+
+### Settings Page
+- Export Functions: PDF and Excel with date range filtering (Today, Weekly, Monthly, Yearly, Custom, Complete)
+- User Balance Summaries: Professional reports with net calculations
+- Password Change: For both users (feature placeholder)
+- Sound Settings: Toggle audio feedback on/off
+- Delete Transactions: Bulk selection with password protection
+- App Preferences: Various configuration options
+
+### Meter Readings Page
+- Reading Entry: Simple form for meter type, reading value, date, remarks
+- Historical View: List of all previous readings with edit capability
+- User Tracking: Associate readings with logged-in user
+- Date-based Organization: Chronological listing with search
+
+## Advanced Features
+
+### Offline Functionality
+- IndexedDB Integration: Local storage for offline data entry
+- Auto-Sync: Background sync every 30 seconds when online
+- Offline Indicator: Visual status showing connection and pending sync count
+- Data Integrity: No data loss with retry mechanism and queue management
+
+### Export Capabilities
+- PDF Reports: Professional formatting with MacLap branding
+- Excel Exports: Multiple sheets with user balance summaries
+- Date Range Filtering: Smart filename generation based on selected period
+- Business Intelligence: Color-coded tables and visual indicators
+
+### Security Features
+- Role-based Access: Different permissions for admin vs super admin
+- Password Protection: Critical operations require authentication
+- Secure Environment Variables: Firebase config through environment variables
+- Session Management: Secure authentication state persistence
+
+## Technical Implementation Details
+
+### Firebase Configuration
+Set up Firebase project with these environment variables:
+- VITE_FIREBASE_API_KEY
+- VITE_FIREBASE_AUTH_DOMAIN
+- VITE_FIREBASE_PROJECT_ID
+- VITE_FIREBASE_STORAGE_BUCKET
+- VITE_FIREBASE_MESSAGING_SENDER_ID
+- VITE_FIREBASE_APP_ID
+
+### Package Dependencies
+Essential packages to include:
+{
+  "firebase": "^11.9.1",
+  "react": "^18.3.1",
+  "wouter": "^3.3.5",
+  "zustand": "^5.0.5",
+  "@tanstack/react-query": "^5.60.5",
+  "tailwindcss": "^3.4.17",
+  "jspdf": "^3.0.1",
+  "xlsx": "^0.18.5",
+  "idb": "^8.0.3",
+  "lucide-react": "^0.453.0",
+  "date-fns": "^3.6.0"
+}
+
+### File Structure
+client/
+├── src/
+│   ├── components/
+│   │   ├── ui/ (shadcn components)
+│   │   ├── bottom-nav.tsx
+│   │   ├── offline-indicator.tsx
+│   │   └── modals/
+│   ├── lib/
+│   │   ├── auth.ts (Zustand auth store)
+│   │   ├── firebase.ts (Firebase config)
+│   │   ├── offline.ts (IndexedDB integration)
+│   │   ├── sounds.ts (Audio feedback)
+│   │   └── queryClient.ts (TanStack Query)
+│   ├── pages/
+│   │   ├── login.tsx
+│   │   ├── transactions.tsx
+│   │   ├── dashboard.tsx
+│   │   ├── notes.tsx
+│   │   ├── settings.tsx
+│   │   ├── meter-readings.tsx
+│   │   └── pending-payments.tsx
+│   └── App.tsx
+server/
+├── index.ts (Express server)
+└── routes.ts (API routes)
+
+## Design Specifications
+- Color Scheme: Blue-purple gradients with professional business appearance
+- Typography: Clean, readable fonts optimized for mobile devices
+- Interactions: Smooth animations and transitions
+- Accessibility: Proper ARIA labels and keyboard navigation
+- Touch Targets: Mobile-optimized button sizes and spacing
+
+## Important Implementation Notes
+1. Default Landing: Transactions page should be the default route after login
+2. Real-time Sync: All data operations must use Firebase real-time listeners
+3. Error Handling: Comprehensive error states and user feedback via toast notifications
+4. Performance: Optimize for mobile devices with fast loading and smooth interactions
+5. Data Integrity: Implement proper form validation and data consistency checks
+6. User Experience: Focus on speed and ease of use for daily business operations
+
+## Testing Requirements
+Ensure the app works correctly on:
+- Desktop browsers (Chrome, Firefox, Safari)
+- Mobile devices (Android, iOS)
+- Offline scenarios with data sync
+- Different screen sizes and orientations
+
+This prompt contains everything needed to recreate the MacLap Cash Tracking App exactly as it currently exists with all features, design elements, and technical specifications.
