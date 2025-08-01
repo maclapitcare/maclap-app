@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation, Router } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,6 +20,26 @@ import Settings from "@/pages/settings";
 import PendingPayments from "@/pages/pending-payments";
 import MeterReadings from "@/pages/meter-readings";
 import DeleteRecords from "@/pages/delete-records";
+
+// Custom hook for GitHub Pages hash-based routing
+function useHashLocation(): [string, (to: string) => void] {
+  const [location, setLocation] = useState(window.location.hash.slice(1) || "/");
+  
+  useEffect(() => {
+    const handleHashChange = () => {
+      setLocation(window.location.hash.slice(1) || "/");
+    };
+    
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+  
+  const navigate = (to: string) => {
+    window.location.hash = to;
+  };
+  
+  return [location, navigate];
+}
 
 function AuthenticatedApp() {
   const [loading, setLoading] = useState(false);
@@ -61,11 +81,19 @@ function App() {
     }
   }, [isAuthenticated]);
 
+  // Use hash-based routing for GitHub Pages
+  const hashLocation = () => window.location.hash.slice(1) || "/";
+  const navigate = (to: string) => {
+    window.location.hash = to;
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        {isAuthenticated() ? <AuthenticatedApp /> : <Login />}
+        <Router hook={useHashLocation}>
+          <Toaster />
+          {isAuthenticated() ? <AuthenticatedApp /> : <Login />}
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );
