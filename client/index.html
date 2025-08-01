@@ -19,6 +19,12 @@
       // the correct url will be waiting in the browser's history for
       // the single page app to route accordingly.
       (function(l) {
+        // Ensure we're in the correct GitHub Pages path
+        if (l.pathname.indexOf('/maclap-app') !== 0) {
+          l.replace(l.protocol + '//' + l.hostname + '/maclap-app/');
+          return;
+        }
+        
         if (l.search[1] === '/' ) {
           var decoded = l.search.slice(1).split('&').map(function(s) { 
             return s.replace(/~and~/g, '&')
