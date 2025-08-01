@@ -22,6 +22,14 @@
       // https://username.github.io/repo-name/?/one/two&a=b~and~c=d#qwe
       // Otherwise, leave pathSegmentsToKeep as 0.
       var pathSegmentsToKeep = 1;
+      
+      // For GitHub Pages project sites, we need to preserve the repo name
+      var l = window.location;
+      if (l.pathname.indexOf('/maclap-app') !== 0) {
+        // If we're not already in the correct path, redirect to the app
+        l.replace(l.protocol + '//' + l.hostname + '/maclap-app/');
+        return;
+      }
 
       var l = window.location;
       l.replace(
