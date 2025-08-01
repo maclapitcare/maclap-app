@@ -32,7 +32,7 @@ jobs:
       run: npm ci
       
     - name: Build
-      run: npx vite build
+      run: cd client && npx vite build --outDir ../dist
       env:
         VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
         VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -47,7 +47,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./dist/public
+        path: ./dist
 
   deploy:
     environment:
