@@ -154,19 +154,22 @@ export default function Dashboard() {
         filtered = transactions.filter(t => t.date === yesterdayStr);
         break;
       case "weekly":
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        filtered = transactions.filter(t => new Date(t.date) >= weekAgo);
+        // Get start of current week (Sunday)
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        startOfWeek.setDate(startOfWeek.getDate() - day);
+        startOfWeek.setHours(0, 0, 0, 0);
+        filtered = transactions.filter(t => new Date(t.date) >= startOfWeek);
         break;
       case "monthly":
-        const monthAgo = new Date(now);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        filtered = transactions.filter(t => new Date(t.date) >= monthAgo);
+        // Get start of current month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        filtered = transactions.filter(t => new Date(t.date) >= startOfMonth);
         break;
       case "yearly":
-        const yearAgo = new Date(now);
-        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-        filtered = transactions.filter(t => new Date(t.date) >= yearAgo);
+        // Get start of current year
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        filtered = transactions.filter(t => new Date(t.date) >= startOfYear);
         break;
       case "january":
       case "february":
@@ -214,19 +217,22 @@ export default function Dashboard() {
         filtered = pendingPayments.filter(p => p.date === yesterdayStr);
         break;
       case "weekly":
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= weekAgo);
+        // Get start of current week (Sunday)
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        startOfWeek.setDate(startOfWeek.getDate() - day);
+        startOfWeek.setHours(0, 0, 0, 0);
+        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfWeek);
         break;
       case "monthly":
-        const monthAgo = new Date(now);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= monthAgo);
+        // Get start of current month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfMonth);
         break;
       case "yearly":
-        const yearAgo = new Date(now);
-        yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= yearAgo);
+        // Get start of current year
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfYear);
         break;
       case "january":
       case "february":
