@@ -17,8 +17,6 @@ import { soundManager } from "@/lib/sounds";
 import { notificationManager } from "@/lib/notifications";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 type AllRecord = {
@@ -462,6 +460,13 @@ export default function Settings() {
   };
 
   const exportToPDF = async () => {
+    toast({
+      title: "PDF Export Unavailable",
+      description: "PDF export is currently unavailable. Please use Excel export instead.",
+      variant: "destructive",
+    });
+    return;
+    /* PDF export disabled - jspdf library blocked by security policy
     const confirmed = window.confirm("Do you want to download the PDF backup report? This will include all your financial data with detailed balance analysis for the selected date range.");
     if (!confirmed) return;
     
@@ -487,6 +492,11 @@ export default function Settings() {
       // Calculate user balances from filtered transactions
       const userBalances = calculateUserBalances(filteredTransactions);
 
+      if (!jsPDF || !autoTable) {
+        toast({ title: "PDF export unavailable", description: "PDF library could not be loaded.", variant: "destructive" });
+        setPdfLoading(false);
+        return;
+      }
       const pdf = new jsPDF();
       
       // Professional Header Design with better font sizing
@@ -849,6 +859,7 @@ export default function Settings() {
       });
     }
     setPdfLoading(false);
+    */ // end of disabled PDF export
   };
 
   // Bulk selection functions for delete records

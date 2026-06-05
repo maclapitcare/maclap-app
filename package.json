@@ -55,12 +55,10 @@
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "firebase": "^11.9.1",
+    "firebase": "^10.14.1",
     "framer-motion": "^11.13.1",
     "idb": "^8.0.3",
     "input-otp": "^1.4.2",
-    "jspdf": "^3.0.1",
-    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
     "nanoid": "^5.1.5",
@@ -111,5 +109,9 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
+  },
+  "overrides": {
+    "form-data": "3.0.4",
+    "jspdf": "1.5.3"
   }
 }
