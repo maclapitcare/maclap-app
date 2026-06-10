@@ -143,38 +143,38 @@ export default function Dashboard() {
       return filtered;
     }
 
-    // If no search query, apply period filtering as usual
+    // If no search query, apply period filtering on top of user filter
     switch (selectedRange) {
       case "today":
         const today = getISTDateString();
-        filtered = transactions.filter(t => t.date === today);
+        filtered = filtered.filter(t => t.date === today);
         break;
       case "yesterday":
         const yesterdayStr = getISTYesterdayString();
-        filtered = transactions.filter(t => t.date === yesterdayStr);
+        filtered = filtered.filter(t => t.date === yesterdayStr);
         break;
       case "weekly":
-        const startOfWeek = getStartOfWeekIST(); // Monday
-        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfWeek);
+        const startOfWeek = getStartOfWeekIST();
+        filtered = filtered.filter(t => new Date(t.date + 'T00:00:00') >= startOfWeek);
         break;
       case "monthly":
         const startOfMonth = getStartOfMonthIST();
-        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfMonth);
+        filtered = filtered.filter(t => new Date(t.date + 'T00:00:00') >= startOfMonth);
         break;
       case "yearly":
         const startOfYear = getStartOfYearIST();
-        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfYear);
+        filtered = filtered.filter(t => new Date(t.date + 'T00:00:00') >= startOfYear);
         break;
       case "last_year":
         const lastYearStart = new Date(getISTYear() - 1, 0, 1);
         const lastYearEnd = new Date(getISTYear() - 1, 11, 31, 23, 59, 59);
-        filtered = transactions.filter(t => {
+        filtered = filtered.filter(t => {
           const d = new Date(t.date + 'T00:00:00');
           return d >= lastYearStart && d <= lastYearEnd;
         });
         break;
       case "all_time":
-        // No filter — show all
+        // No date filter — keep user filter only
         break;
       case "january":
       case "february":
@@ -190,7 +190,7 @@ export default function Dashboard() {
       case "december":
         const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
         const monthIndex = monthNames.indexOf(selectedRange);
-        filtered = transactions.filter(t => {
+        filtered = filtered.filter(t => {
           const transactionDate = new Date(t.date);
           return transactionDate.getMonth() === monthIndex && transactionDate.getFullYear() === selectedYear;
         });
@@ -212,34 +212,34 @@ export default function Dashboard() {
     switch (selectedRange) {
       case "today":
         const today = getISTDateString();
-        filtered = pendingPayments.filter(p => p.date === today);
+        filtered = filtered.filter(p => p.date === today);
         break;
       case "yesterday":
         const yesterdayStr = getISTYesterdayString();
-        filtered = pendingPayments.filter(p => p.date === yesterdayStr);
+        filtered = filtered.filter(p => p.date === yesterdayStr);
         break;
       case "weekly":
-        const startOfWeek = getStartOfWeekIST(); // Monday
-        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfWeek);
+        const startOfWeek = getStartOfWeekIST();
+        filtered = filtered.filter(p => new Date(p.date + 'T00:00:00') >= startOfWeek);
         break;
       case "monthly":
         const startOfMonth = getStartOfMonthIST();
-        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfMonth);
+        filtered = filtered.filter(p => new Date(p.date + 'T00:00:00') >= startOfMonth);
         break;
       case "yearly":
         const startOfYear = getStartOfYearIST();
-        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfYear);
+        filtered = filtered.filter(p => new Date(p.date + 'T00:00:00') >= startOfYear);
         break;
       case "last_year":
         const lastYearStart = new Date(getISTYear() - 1, 0, 1);
         const lastYearEnd = new Date(getISTYear() - 1, 11, 31, 23, 59, 59);
-        filtered = pendingPayments.filter(p => {
+        filtered = filtered.filter(p => {
           const d = new Date(p.date + 'T00:00:00');
           return d >= lastYearStart && d <= lastYearEnd;
         });
         break;
       case "all_time":
-        // No filter — show all
+        // No date filter — keep user filter only
         break;
       case "january":
       case "february":
@@ -255,7 +255,7 @@ export default function Dashboard() {
       case "december":
         const monthNames = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
         const monthIndex = monthNames.indexOf(selectedRange);
-        filtered = pendingPayments.filter(p => {
+        filtered = filtered.filter(p => {
           const paymentDate = new Date(p.date);
           return paymentDate.getMonth() === monthIndex && paymentDate.getFullYear() === selectedYear;
         });
