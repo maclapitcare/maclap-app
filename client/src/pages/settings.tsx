@@ -464,29 +464,18 @@ export default function Settings() {
   };
 
   const exportToPDF = async () => {
-    toast({
-      title: "PDF Export Unavailable",
-      description: "PDF export is currently unavailable. Please use Excel export instead.",
-      variant: "destructive",
-    });
-    return;
-    /* PDF export disabled - jspdf library blocked by security policy
-    const confirmed = window.confirm("Do you want to download the PDF backup report? This will include all your financial data with detailed balance analysis for the selected date range.");
-    if (!confirmed) return;
-    
     setPdfLoading(true);
     try {
-      // Collect data from Firebase (excluding notes)
-      const [transactions, pendingPayments, meterReadings] = await Promise.all([
+      // Collect data from Firebase
+      const [transactionsSnap, pendingSnap, meterSnap] = await Promise.all([
         getDocs(collection(db, "transactions")),
         getDocs(collection(db, "pendingPayments")),
         getDocs(collection(db, "meterReadings"))
       ]);
 
-      // Convert Firebase docs to arrays with proper typing
-      const transactionsList = transactions.docs.map(doc => ({ ...doc.data() as Transaction }));
-      const pendingList = pendingPayments.docs.map(doc => ({ ...doc.data() as PendingPayment }));
-      const meterList = meterReadings.docs.map(doc => ({ ...doc.data() as MeterReading }));
+      const transactionsList = transactionsSnap.docs.map(doc => ({ ...doc.data() as Transaction }));
+      const pendingList = pendingSnap.docs.map(doc => ({ ...doc.data() as PendingPayment }));
+      const meterList = meterSnap.docs.map(doc => ({ ...doc.data() as MeterReading }));
 
       // Filter data by selected date range, then by user
       const byDate = {
@@ -494,382 +483,143 @@ export default function Settings() {
         p: filterDataByDateRange(pendingList),
         m: filterDataByDateRange(meterList),
       };
-      const filteredTransactions = exportUser === "all" ? byDate.t : byDate.t.filter((t: any) => t.user === exportUser);
-      const filteredPending    = exportUser === "all" ? byDate.p : byDate.p.filter((p: any) => p.user === exportUser);
-      const filteredMeter      = exportUser === "all" ? byDate.m : byDate.m.filter((m: any) => m.user === exportUser);
+      const txns   = exportUser === "all" ? byDate.t : byDate.t.filter((t: any) => t.user === exportUser);
+      const pending = exportUser === "all" ? byDate.p : byDate.p.filter((p: any) => p.user === exportUser);
+      const meters  = exportUser === "all" ? byDate.m : byDate.m.filter((m: any) => m.user === exportUser);
 
-      // Calculate user balances from filtered transactions
-      const userBalances = calculateUserBalances(filteredTransactions);
+      const totalIn  = txns.filter((t: any) => t.type === 'in').reduce((s: number, t: any) => s + t.amount, 0);
+      const totalOut = txns.filter((t: any) => t.type === 'out').reduce((s: number, t: any) => s + t.amount, 0);
+      const net = totalIn - totalOut;
 
-      if (!jsPDF || !autoTable) {
-        toast({ title: "PDF export unavailable", description: "PDF library could not be loaded.", variant: "destructive" });
+      // Per-user balances
+      const users = ["Puneet", "Sonu"];
+      const userRows = users.map(u => {
+        const uIn  = txns.filter((t: any) => t.user === u && t.type === 'in').reduce((s: number, t: any) => s + t.amount, 0);
+        const uOut = txns.filter((t: any) => t.user === u && t.type === 'out').reduce((s: number, t: any) => s + t.amount, 0);
+        return { name: u, in: uIn, out: uOut, net: uIn - uOut };
+      });
+
+      const dateRangeText = exportDateRange === "complete" ? "Complete Data" :
+                           exportDateRange === "custom" && customStartDate && customEndDate ?
+                           `${customStartDate} to ${customEndDate}` :
+                           exportDateRange.charAt(0).toUpperCase() + exportDateRange.slice(1);
+      const userLabel = exportUser === "all" ? "All Users" : exportUser;
+      const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+      const txnRows = (txns as any[]).sort((a, b) => b.timestamp - a.timestamp).map((t: any) => `
+        <tr>
+          <td>${t.date}</td>
+          <td>${t.user}</td>
+          <td style="color:${t.type === 'in' ? '#16a34a' : '#dc2626'};font-weight:600">${t.type === 'in' ? 'Cash In' : 'Cash Out'}</td>
+          <td style="text-align:right;font-weight:600">₹${Number(t.amount).toLocaleString()}</td>
+          <td>${t.remark || '-'}</td>
+        </tr>`).join('');
+
+      const pendingRows = (pending as any[]).sort((a, b) => b.timestamp - a.timestamp).map((p: any) => `
+        <tr>
+          <td>${p.date}</td>
+          <td>${p.user}</td>
+          <td style="text-align:right;font-weight:600;color:#d97706">₹${Number(p.amount).toLocaleString()}</td>
+          <td>${p.remark || '-'}</td>
+        </tr>`).join('');
+
+      const meterRows = (meters as any[]).sort((a, b) => b.timestamp - a.timestamp).map((m: any) => `
+        <tr>
+          <td>${m.date}</td>
+          <td>${m.user}</td>
+          <td style="text-align:right">${m.reading}</td>
+          <td>${m.remark || '-'}</td>
+        </tr>`).join('');
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>MacLap Report - ${userLabel} - ${dateRangeText}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #1f2937; padding: 24px; }
+    h1 { font-size: 22px; font-weight: 800; color: #1e3a5f; }
+    h2 { font-size: 14px; font-weight: 700; margin: 18px 0 8px; color: #1e3a5f; border-bottom: 2px solid #3b82f6; padding-bottom: 4px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 3px solid #1e3a5f; padding-bottom: 12px; }
+    .meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .summary-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; }
+    .summary-card .val { font-size: 18px; font-weight: 800; }
+    .summary-card .lbl { font-size: 10px; color: #6b7280; margin-top: 2px; }
+    .green { color: #16a34a; }
+    .red   { color: #dc2626; }
+    .blue  { color: #2563eb; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
+    th { background: #1e3a5f; color: white; padding: 6px 8px; text-align: left; }
+    td { padding: 5px 8px; border-bottom: 1px solid #f3f4f6; }
+    tr:nth-child(even) td { background: #f9fafb; }
+    .footer { margin-top: 24px; text-align: center; font-size: 10px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+    @media print { body { padding: 12px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>MacLap IT Care</h1>
+      <div class="meta">Cash Tracking Report &nbsp;|&nbsp; Period: <b>${dateRangeText}</b> &nbsp;|&nbsp; User: <b>${userLabel}</b></div>
+      <div class="meta">Generated: ${now} IST</div>
+    </div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card"><div class="val green">₹${totalIn.toLocaleString()}</div><div class="lbl">Total Cash In</div></div>
+    <div class="summary-card"><div class="val red">₹${totalOut.toLocaleString()}</div><div class="lbl">Total Cash Out</div></div>
+    <div class="summary-card"><div class="val ${net >= 0 ? 'green' : 'red'}">₹${Math.abs(net).toLocaleString()}</div><div class="lbl">Net ${net >= 0 ? 'Profit' : 'Loss'}</div></div>
+  </div>
+
+  ${exportUser === "all" ? `
+  <h2>User Performance</h2>
+  <table>
+    <thead><tr><th>User</th><th>Cash In</th><th>Cash Out</th><th>Net Balance</th></tr></thead>
+    <tbody>${userRows.map(u => `<tr><td><b>${u.name}</b></td><td style="color:#16a34a">₹${u.in.toLocaleString()}</td><td style="color:#dc2626">₹${u.out.toLocaleString()}</td><td style="font-weight:700;color:${u.net>=0?'#16a34a':'#dc2626'}">₹${Math.abs(u.net).toLocaleString()}</td></tr>`).join('')}</tbody>
+  </table>` : ''}
+
+  <h2>Transactions (${txns.length})</h2>
+  ${txns.length > 0 ? `<table>
+    <thead><tr><th>Date</th><th>User</th><th>Type</th><th>Amount</th><th>Remark</th></tr></thead>
+    <tbody>${txnRows}</tbody>
+  </table>` : '<p style="color:#6b7280;font-style:italic;margin-bottom:12px">No transactions found.</p>'}
+
+  <h2>Pending Payments (${pending.length})</h2>
+  ${pending.length > 0 ? `<table>
+    <thead><tr><th>Date</th><th>User</th><th>Amount</th><th>Remark</th></tr></thead>
+    <tbody>${pendingRows}</tbody>
+  </table>` : '<p style="color:#6b7280;font-style:italic;margin-bottom:12px">No pending payments found.</p>'}
+
+  <h2>Meter Readings (${meters.length})</h2>
+  ${meters.length > 0 ? `<table>
+    <thead><tr><th>Date</th><th>User</th><th>Reading</th><th>Remark</th></tr></thead>
+    <tbody>${meterRows}</tbody>
+  </table>` : '<p style="color:#6b7280;font-style:italic;margin-bottom:12px">No meter readings found.</p>'}
+
+  <div class="footer">MacLap IT Care &mdash; Cash Tracking System &mdash; Confidential</div>
+  <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>`;
+
+      const win = window.open('', '_blank');
+      if (!win) {
+        toast({ title: "Popup Blocked", description: "Please allow popups for this site, then try again.", variant: "destructive" });
         setPdfLoading(false);
         return;
       }
-      const pdf = new jsPDF();
-      
-      // Professional Header Design with better font sizing
-      pdf.setFillColor(30, 41, 59); // Dark blue background
-      pdf.rect(0, 0, 210, 45, 'F'); // Full width header
-      
-      pdf.setTextColor(255, 255, 255); // White text
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('MacLap Cash Tracker', 105, 18, { align: 'center' });
-      
-      pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Business Financial Report', 105, 30, { align: 'center' });
-      pdf.text(`Period: ${getDateRangeDescription()}`, 105, 38, { align: 'center' });
-      
-      // Report Info Box with better spacing
-      pdf.setTextColor(0, 0, 0); // Black text
-      pdf.setFillColor(248, 250, 252); // Light gray background
-      pdf.rect(15, 50, 180, 25, 'F'); // Info box
-      pdf.setDrawColor(203, 213, 225);
-      pdf.rect(15, 50, 180, 25, 'S'); // Border
-      
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Report Generated:', 20, 62);
-      
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.text(`${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 20, 70);
-      
-      let yPosition = 85;
+      win.document.write(html);
+      win.document.close();
 
-      // Enhanced Balance Summary Section
-      if (filteredTransactions.length > 0) {
-        // Section Header with Background
-        pdf.setFillColor(59, 130, 246); // Blue background
-        pdf.rect(15, yPosition, 180, 15, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(13);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('User Balance Analysis', 105, yPosition + 10, { align: 'center' });
-        yPosition += 25;
-
-        // Calculate overall statistics
-        const totalCashIn = Object.values(userBalances).reduce((sum, balance) => sum + balance.in, 0);
-        const totalCashOut = Object.values(userBalances).reduce((sum, balance) => sum + balance.out, 0);
-        const netPosition = totalCashIn - totalCashOut;
-
-        // Overview Statistics Box with better layout
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFillColor(240, 253, 244); // Light green background
-        pdf.rect(15, yPosition, 180, 35, 'F');
-        pdf.setDrawColor(34, 197, 94);
-        pdf.rect(15, yPosition, 180, 35, 'S');
-        
-        pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Period Financial Overview:', 20, yPosition + 12);
-        
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        pdf.text(`Total Cash In: Rs. ${totalCashIn.toLocaleString()}`, 25, yPosition + 22);
-        pdf.text(`Total Cash Out: Rs. ${totalCashOut.toLocaleString()}`, 25, yPosition + 30);
-        
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Net Business Position: Rs. ${netPosition.toLocaleString()}`, 110, yPosition + 22);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(netPosition >= 0 ? 'Status: Profitable' : 'Status: Loss', 110, yPosition + 30);
-        yPosition += 45;
-
-        // Individual user balance table with better formatting
-        const balanceData = Object.entries(userBalances).map(([user, balance]) => {
-          const profitMargin = balance.in > 0 ? ((balance.net / balance.in) * 100).toFixed(1) : '0.0';
-          return [
-            user,
-            `Rs. ${balance.in.toLocaleString()}`,
-            `Rs. ${balance.out.toLocaleString()}`,
-            `Rs. ${balance.net.toLocaleString()}`,
-            `${profitMargin}%`,
-            balance.net >= 0 ? 'Profit' : 'Loss'
-          ];
-        });
-
-        autoTable(pdf, {
-          head: [['User Name', 'Cash In', 'Cash Out', 'Net Balance', 'Profit %', 'Status']],
-          body: balanceData,
-          startY: yPosition,
-          styles: { 
-            fontSize: 10,
-            cellPadding: 5,
-            halign: 'center',
-            lineWidth: 0.1,
-            lineColor: [200, 200, 200]
-          },
-          headStyles: { 
-            fillColor: [30, 41, 59],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 11
-          },
-          columnStyles: {
-            0: { halign: 'left', fontStyle: 'bold' }, // User name - left aligned
-            1: { halign: 'right', textColor: [22, 163, 74], fontStyle: 'bold' }, // Cash In - Green
-            2: { halign: 'right', textColor: [220, 38, 127], fontStyle: 'bold' }, // Cash Out - Red
-            3: { halign: 'right', fontStyle: 'bold', fontSize: 11 },
-            4: { halign: 'center', fontStyle: 'bold' },
-            5: { halign: 'center', fontStyle: 'bold' }
-          },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-          margin: { top: 10, left: 15, right: 15 }
-        });
-
-        yPosition = (pdf as any).lastAutoTable.finalY + 25;
-      }
-
-      // Check if new page needed
-      if (yPosition > 220) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      // Enhanced Transactions section
-      if (filteredTransactions.length > 0) {
-        // Section Header
-        pdf.setFillColor(34, 197, 94); // Green background
-        pdf.rect(15, yPosition, 180, 15, 'F');
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFontSize(13);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Transaction Details', 105, yPosition + 10, { align: 'center' });
-        yPosition += 25;
-
-        // Transaction statistics with better layout
-        const cashInTransactions = filteredTransactions.filter(t => t.type === 'Cash In');
-        const cashOutTransactions = filteredTransactions.filter(t => t.type === 'Cash Out');
-        
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFillColor(254, 249, 195); // Light yellow background
-        pdf.rect(15, yPosition, 180, 25, 'F');
-        pdf.setDrawColor(245, 158, 11);
-        pdf.rect(15, yPosition, 180, 25, 'S');
-        
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Transaction Summary:`, 20, yPosition + 10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`Total: ${filteredTransactions.length} records`, 20, yPosition + 18);
-        pdf.text(`Cash In: ${cashInTransactions.length}`, 80, yPosition + 18);
-        pdf.text(`Cash Out: ${cashOutTransactions.length}`, 130, yPosition + 18);
-        yPosition += 35;
-
-        // Sort transactions by date (newest first)
-        const sortedTransactions = [...filteredTransactions].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-
-        const transactionData = sortedTransactions.map(transaction => [
-          transaction.date,
-          transaction.type,
-          `Rs. ${transaction.amount.toLocaleString()}`,
-          transaction.remark.length > 35 ? transaction.remark.substring(0, 35) + '...' : transaction.remark,
-          transaction.user
-        ]);
-
-        autoTable(pdf, {
-          head: [['Date', 'Type', 'Amount', 'Remark', 'User']],
-          body: transactionData,
-          startY: yPosition,
-          styles: { 
-            fontSize: 9,
-            cellPadding: 4,
-            lineWidth: 0.1,
-            lineColor: [200, 200, 200]
-          },
-          headStyles: { 
-            fillColor: [30, 41, 59],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: 10
-          },
-          columnStyles: {
-            0: { halign: 'center', fontSize: 8 }, // Date - centered
-            1: { halign: 'center', fontStyle: 'bold', textColor: [34, 197, 94] }, // Transaction Type
-            2: { halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] }, // Amount
-            3: { halign: 'left', fontSize: 8 }, // Remark - left aligned
-            4: { halign: 'center', fontStyle: 'bold' } // User - centered
-          },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-          margin: { top: 10, left: 15, right: 15 }
-        });
-
-        yPosition = (pdf as any).lastAutoTable.finalY + 25;
-      }
-
-      // Add new page if needed
-      if (yPosition > 250) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      // Check if new page needed
-      if (yPosition > 220) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      // Pending Payments section
-      if (filteredPending.length > 0) {
-        pdf.setFontSize(16);
-        pdf.text('Pending Payments', 20, yPosition);
-        yPosition += 10;
-
-        const pendingData = filteredPending.map(payment => [
-          payment.date,
-          payment.to,
-          `₹${payment.amount.toLocaleString()}`,
-          payment.remark,
-          payment.user
-        ]);
-
-        autoTable(pdf, {
-          head: [['Date', 'To', 'Amount', 'Remark', 'User']],
-          body: pendingData,
-          startY: yPosition,
-          styles: { fontSize: 8 },
-          headStyles: { fillColor: [243, 156, 18] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-          margin: { top: 10 }
-        });
-
-        yPosition = (pdf as any).lastAutoTable.finalY + 20;
-      }
-
-      // Check if new page needed
-      if (yPosition > 220) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      // Meter Readings section
-      if (filteredMeter.length > 0) {
-        pdf.setFontSize(16);
-        pdf.text('Meter Readings', 20, yPosition);
-        yPosition += 10;
-
-        const meterData = filteredMeter.map(meter => [
-          meter.date,
-          meter.reading.toString(),
-          meter.remark,
-          meter.user
-        ]);
-
-        autoTable(pdf, {
-          head: [['Date', 'Reading', 'Remark', 'User']],
-          body: meterData,
-          startY: yPosition,
-          styles: { fontSize: 8 },
-          headStyles: { fillColor: [155, 89, 182] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-          margin: { top: 10 }
-        });
-
-        yPosition = (pdf as any).lastAutoTable.finalY + 20;
-      }
-
-      // Check if new page needed
-      if (yPosition > 220) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-
-
-      // Enhanced Summary Footer Section
-      if (yPosition > 180) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      // Summary Header
-      pdf.setFillColor(99, 102, 241); // Indigo background
-      pdf.rect(15, yPosition, 180, 15, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(13);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Report Summary', 105, yPosition + 10, { align: 'center' });
-      yPosition += 25;
-
-      // Summary Statistics Box with improved layout
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFillColor(243, 244, 246); // Light gray background
-      pdf.rect(15, yPosition, 180, 55, 'F');
-      pdf.setDrawColor(156, 163, 175);
-      pdf.rect(15, yPosition, 180, 55, 'S');
-      
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Record Summary:', 20, yPosition + 12);
-      
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.text(`Transactions: ${filteredTransactions.length} records`, 25, yPosition + 22);
-      pdf.text(`Pending Payments: ${filteredPending.length} records`, 25, yPosition + 30);
-      pdf.text(`Meter Readings: ${filteredMeter.length} records`, 25, yPosition + 38);
-      
-      // Business totals with better alignment
-      if (filteredTransactions.length > 0) {
-        const totalCashIn = Object.values(userBalances).reduce((sum, balance) => sum + balance.in, 0);
-        const totalCashOut = Object.values(userBalances).reduce((sum, balance) => sum + balance.out, 0);
-        const netPosition = totalCashIn - totalCashOut;
-        
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Financial Summary:', 110, yPosition + 12);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`Total Cash In: Rs. ${totalCashIn.toLocaleString()}`, 115, yPosition + 22);
-        pdf.text(`Total Cash Out: Rs. ${totalCashOut.toLocaleString()}`, 115, yPosition + 30);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Net Position: Rs. ${netPosition.toLocaleString()}`, 115, yPosition + 38);
-        if (netPosition >= 0) {
-          pdf.setTextColor(22, 163, 74); // Green for profit
-        } else {
-          pdf.setTextColor(220, 38, 127); // Red for loss
-        }
-        pdf.text(netPosition >= 0 ? 'Status: Profitable' : 'Status: Loss', 115, yPosition + 46);
-      }
-      
-      yPosition += 70;
-
-      // Professional Footer with better spacing
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFillColor(30, 41, 59); // Dark blue footer
-      pdf.rect(0, yPosition, 210, 25, 'F');
-      
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(9);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('MacLap Business Management System', 20, yPosition + 10);
-      pdf.text(`Report Generated: ${new Date().toLocaleDateString()}`, 20, yPosition + 18);
-      pdf.text('Confidential Business Data', 140, yPosition + 10);
-      pdf.text('Professional Financial Report', 140, yPosition + 18);
-
-      // Save PDF with descriptive filename
-      const dateRangeText = exportDateRange === "complete" ? "complete" : 
-                           exportDateRange === "custom" && customStartDate && customEndDate ? 
-                           `${customStartDate}-to-${customEndDate}` : exportDateRange;
-      const fileName = `maclap-backup-${dateRangeText}-${new Date().toISOString().split('T')[0]}.pdf`;
-      pdf.save(fileName);
-
-      toast({
-        title: "PDF Export Complete",
-        description: "Your data has been exported to PDF successfully",
-      });
+      toast({ title: "PDF Ready", description: "A print dialog has opened. Choose 'Save as PDF' to download." });
     } catch (error) {
       console.error("PDF export error:", error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export PDF file. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Export Failed", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
     }
     setPdfLoading(false);
-    */ // end of disabled PDF export
   };
+
 
   // Bulk selection functions for delete records
   const toggleRecordSelection = (recordId: string) => {
