@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState<TimeRange>("today");
+  const [selectedUser, setSelectedUser] = useState<"all" | "Puneet" | "Sonu">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [selectedYear, setSelectedYear] = useState(getISTYear());
@@ -88,7 +89,7 @@ export default function Dashboard() {
   }, []);
 
   const getFilteredTransactions = () => {
-    let filtered = [...transactions];
+    let filtered = selectedUser === "all" ? [...transactions] : transactions.filter(t => t.user === selectedUser);
 
     // GLOBAL SEARCH: If there's a search query, search across ALL transactions first
     if (searchQuery.trim()) {
@@ -206,7 +207,7 @@ export default function Dashboard() {
   };
 
   const getFilteredPending = () => {
-    let filtered = [...pendingPayments];
+    let filtered = selectedUser === "all" ? [...pendingPayments] : pendingPayments.filter(p => p.user === selectedUser);
 
     switch (selectedRange) {
       case "today":
@@ -521,6 +522,38 @@ export default function Dashboard() {
                 )}
               </div>
               
+              {/* User Filter */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <User size={18} className="text-purple-600" />
+                  <span className="text-sm font-semibold text-gray-700">View by User:</span>
+                </div>
+                <div className="flex gap-2">
+                  {[
+                    { key: "all", label: "All Users", icon: "👥" },
+                    { key: "Puneet", label: "Puneet", icon: "🔵" },
+                    { key: "Sonu", label: "Sonu", icon: "🟢" }
+                  ].map(({ key, label, icon }) => (
+                    <Button
+                      key={key}
+                      onClick={() => setSelectedUser(key as "all" | "Puneet" | "Sonu")}
+                      variant={selectedUser === key ? "default" : "outline"}
+                      className={`h-9 px-4 text-xs font-medium rounded-xl transition-all duration-200 ${
+                        selectedUser === key
+                          ? key === "Puneet"
+                            ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md scale-105"
+                            : key === "Sonu"
+                            ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-md scale-105"
+                            : "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md scale-105"
+                          : "bg-white border-gray-300 text-gray-600 hover:border-purple-400 hover:text-purple-700"
+                      }`}
+                    >
+                      {icon} {label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               {/* Current Selection Display */}
               <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
                 <div className="flex items-center justify-between">
