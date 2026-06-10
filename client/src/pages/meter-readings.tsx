@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { getISTDateString } from "@/lib/dateUtils";
 import { collection, addDoc, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { MeterReading, insertMeterReadingSchema } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export default function MeterReadings() {
   const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getISTDateString(),
     reading: "",
     remark: ""
   });
@@ -65,7 +66,7 @@ export default function MeterReadings() {
       await addDoc(collection(db, "meterReadings"), validatedData);
       
       setFormData({
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         reading: "",
         remark: ""
       });

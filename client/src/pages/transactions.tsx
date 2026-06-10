@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { collection, onSnapshot, addDoc, orderBy, query, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getISTDateString, getISTYesterdayString } from "@/lib/dateUtils";
 import { useAuth } from "@/lib/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,11 +26,11 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     type: "in",
-    date: new Date().toISOString().split('T')[0],
+    date: getISTDateString(),
     amount: "",
     remark: ""
   });
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getISTDateString());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
@@ -145,7 +146,7 @@ export default function Transactions() {
       // Reset form
       setForm({
         type: "in",
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         amount: "",
         remark: ""
       });
@@ -267,14 +268,11 @@ export default function Transactions() {
   };
 
   const isToday = (dateString: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return dateString === today;
+    return dateString === getISTDateString();
   };
 
   const isYesterday = (dateString: string) => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return dateString === yesterday.toISOString().split('T')[0];
+    return dateString === getISTYesterdayString();
   };
 
   const canEditOrDelete = (dateString: string) => {
@@ -629,7 +627,7 @@ export default function Transactions() {
                       id="pending-date"
                       name="date"
                       type="date"
-                      defaultValue={new Date().toISOString().split('T')[0]}
+                      defaultValue={getISTDateString()}
                       className="mt-2 h-12 bg-white/80 border-2 border-gray-200 focus:border-orange-400"
                       required
                     />

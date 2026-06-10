@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { getISTDateString } from "@/lib/dateUtils";
 import { collection, addDoc, onSnapshot, query, orderBy, doc, deleteDoc } from "firebase/firestore";
 import { PendingPayment, insertPendingPaymentSchema, insertTransactionSchema } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,7 @@ export default function PendingPayments() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getISTDateString(),
     amount: "",
     remark: ""
   });
@@ -58,7 +59,7 @@ export default function PendingPayments() {
       await addDoc(collection(db, "pending"), validatedData);
       
       setFormData({
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         amount: "",
         remark: ""
       });

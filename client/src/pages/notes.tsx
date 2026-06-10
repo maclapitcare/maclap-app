@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { getISTDateString } from "@/lib/dateUtils";
 import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { Note, insertNoteSchema } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +24,7 @@ export default function Notes() {
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
   const [deletePassword, setDeletePassword] = useState("");
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getISTDateString(),
     title: "",
     content: ""
   });
@@ -94,7 +95,7 @@ export default function Notes() {
       }
       
       setFormData({
-        date: new Date().toISOString().split('T')[0],
+        date: getISTDateString(),
         title: "",
         content: ""
       });
@@ -172,7 +173,7 @@ export default function Notes() {
   const handleCancelEdit = () => {
     setEditingNote(null);
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: getISTDateString(),
       title: "",
       content: ""
     });

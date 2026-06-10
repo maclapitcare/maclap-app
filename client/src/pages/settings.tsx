@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Transaction, PendingPayment, MeterReading, Note } from "@shared/schema";
 import { soundManager } from "@/lib/sounds";
 import { notificationManager } from "@/lib/notifications";
+import { getISTDateString, getISTNow, getStartOfMonthIST, getStartOfYearIST } from "@/lib/dateUtils";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as XLSX from 'xlsx';
@@ -120,12 +121,11 @@ export default function Settings() {
 
   // Helper function to filter data by date range
   const filterDataByDateRange = (data: any[], dateField: string = 'date') => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+    const today = getISTNow();
+
     return data.filter(item => {
-      const itemDate = new Date(item[dateField]);
-      
+      const itemDate = new Date(item[dateField] + 'T00:00:00');
+
       switch (exportDateRange) {
         case "today":
           return itemDate >= today;
@@ -134,16 +134,13 @@ export default function Settings() {
           weekStart.setDate(today.getDate() - 7);
           return itemDate >= weekStart;
         case "monthly":
-          const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-          return itemDate >= monthStart;
+          return itemDate >= getStartOfMonthIST();
         case "yearly":
-          const yearStart = new Date(today.getFullYear(), 0, 1);
-          return itemDate >= yearStart;
+          return itemDate >= getStartOfYearIST();
         case "custom":
           if (customStartDate && customEndDate) {
-            const startDate = new Date(customStartDate);
-            const endDate = new Date(customEndDate);
-            endDate.setHours(23, 59, 59); // Include full end date
+            const startDate = new Date(customStartDate + 'T00:00:00');
+            const endDate = new Date(customEndDate + 'T23:59:59');
             return itemDate >= startDate && itemDate <= endDate;
           }
           return true;

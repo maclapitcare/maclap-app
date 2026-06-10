@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { db } from "@/lib/firebase";
+import { getISTDateString, getISTYesterdayString, getISTNow, getStartOfWeekIST, getStartOfMonthIST, getStartOfYearIST, getISTYear, getISTWeekdayShort } from "@/lib/dateUtils";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { Transaction, PendingPayment } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,7 @@ export default function Dashboard() {
   const [selectedRange, setSelectedRange] = useState<TimeRange>("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDate, setSearchDate] = useState("");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(getISTYear());
 
   // Function to get display name for current period selection
   const getPeriodDisplayName = () => {
@@ -140,36 +141,26 @@ export default function Dashboard() {
     }
 
     // If no search query, apply period filtering as usual
-    const now = new Date();
-
     switch (selectedRange) {
       case "today":
-        const today = now.toISOString().split('T')[0];
+        const today = getISTDateString();
         filtered = transactions.filter(t => t.date === today);
         break;
       case "yesterday":
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = getISTYesterdayString();
         filtered = transactions.filter(t => t.date === yesterdayStr);
         break;
       case "weekly":
-        // Get start of current week (Sunday)
-        const startOfWeek = new Date(now);
-        const day = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        startOfWeek.setDate(startOfWeek.getDate() - day);
-        startOfWeek.setHours(0, 0, 0, 0);
-        filtered = transactions.filter(t => new Date(t.date) >= startOfWeek);
+        const startOfWeek = getStartOfWeekIST(); // Monday
+        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfWeek);
         break;
       case "monthly":
-        // Get start of current month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = transactions.filter(t => new Date(t.date) >= startOfMonth);
+        const startOfMonth = getStartOfMonthIST();
+        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfMonth);
         break;
       case "yearly":
-        // Get start of current year
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        filtered = transactions.filter(t => new Date(t.date) >= startOfYear);
+        const startOfYear = getStartOfYearIST();
+        filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfYear);
         break;
       case "january":
       case "february":
@@ -202,37 +193,28 @@ export default function Dashboard() {
   };
 
   const getFilteredPending = () => {
-    const now = new Date();
     let filtered = [...pendingPayments];
 
     switch (selectedRange) {
       case "today":
-        const today = now.toISOString().split('T')[0];
+        const today = getISTDateString();
         filtered = pendingPayments.filter(p => p.date === today);
         break;
       case "yesterday":
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = getISTYesterdayString();
         filtered = pendingPayments.filter(p => p.date === yesterdayStr);
         break;
       case "weekly":
-        // Get start of current week (Sunday)
-        const startOfWeek = new Date(now);
-        const day = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        startOfWeek.setDate(startOfWeek.getDate() - day);
-        startOfWeek.setHours(0, 0, 0, 0);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfWeek);
+        const startOfWeek = getStartOfWeekIST(); // Monday
+        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfWeek);
         break;
       case "monthly":
-        // Get start of current month
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfMonth);
+        const startOfMonth = getStartOfMonthIST();
+        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfMonth);
         break;
       case "yearly":
-        // Get start of current year
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
-        filtered = pendingPayments.filter(p => new Date(p.date) >= startOfYear);
+        const startOfYear = getStartOfYearIST();
+        filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfYear);
         break;
       case "january":
       case "february":
@@ -287,19 +269,19 @@ export default function Dashboard() {
   // Generate chart data for the last 7 days
   const getChartData = () => {
     const last7Days = [];
-    const today = new Date();
+    const todayIST = getISTNow ? getISTNow() : new Date();
     
     for (let i = 6; i >= 0; i--) {
-      const date = new Date(today);
+      const date = new Date(todayIST);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getISTDateString(date);
       
       const dayTransactions = transactions.filter(t => t.date === dateStr);
       const cashIn = dayTransactions.filter(t => t.type === 'in').reduce((sum, t) => sum + t.amount, 0);
       const cashOut = dayTransactions.filter(t => t.type === 'out').reduce((sum, t) => sum + t.amount, 0);
       
       last7Days.push({
-        date: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        date: getISTWeekdayShort(dateStr),
         cashIn,
         cashOut,
         net: cashIn - cashOut
@@ -328,7 +310,7 @@ export default function Dashboard() {
   // Smart insights
   const getSmartInsights = () => {
     const insights = [];
-    const todayTransactions = transactions.filter(t => t.date === new Date().toISOString().split('T')[0]);
+    const todayTransactions = transactions.filter(t => t.date === getISTDateString());
     const avgDailyIn = transactions.filter(t => t.type === 'in').reduce((sum, t) => sum + t.amount, 0) / Math.max(1, new Set(transactions.map(t => t.date)).size);
     
     if (summary.netBalance > 0) {
