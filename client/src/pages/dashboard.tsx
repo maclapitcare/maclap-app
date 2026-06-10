@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUp, ArrowDown, Wallet, Clock, Calendar, Sparkles, Target, TrendingUp, TrendingDown, User, LogOut, Search, BarChart3, PieChart, Activity, Award, Zap, DollarSign } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Cell } from "recharts";
 
-type TimeRange = "today" | "yesterday" | "weekly" | "monthly" | "yearly" | "january" | "february" | "march" | "april" | "may" | "june" | "july" | "august" | "september" | "october" | "november" | "december";
+type TimeRange = "today" | "yesterday" | "weekly" | "monthly" | "yearly" | "last_year" | "all_time" | "january" | "february" | "march" | "april" | "may" | "june" | "july" | "august" | "september" | "october" | "november" | "december";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -32,6 +32,8 @@ export default function Dashboard() {
       case "weekly": return "This Week";
       case "monthly": return "This Month";
       case "yearly": return "This Year";
+      case "last_year": return "Last Year";
+      case "all_time": return "All Time";
       case "january": return `January ${selectedYear}`;
       case "february": return `February ${selectedYear}`;
       case "march": return `March ${selectedYear}`;
@@ -162,6 +164,17 @@ export default function Dashboard() {
         const startOfYear = getStartOfYearIST();
         filtered = transactions.filter(t => new Date(t.date + 'T00:00:00') >= startOfYear);
         break;
+      case "last_year":
+        const lastYearStart = new Date(getISTYear() - 1, 0, 1);
+        const lastYearEnd = new Date(getISTYear() - 1, 11, 31, 23, 59, 59);
+        filtered = transactions.filter(t => {
+          const d = new Date(t.date + 'T00:00:00');
+          return d >= lastYearStart && d <= lastYearEnd;
+        });
+        break;
+      case "all_time":
+        // No filter — show all
+        break;
       case "january":
       case "february":
       case "march":
@@ -215,6 +228,17 @@ export default function Dashboard() {
       case "yearly":
         const startOfYear = getStartOfYearIST();
         filtered = pendingPayments.filter(p => new Date(p.date + 'T00:00:00') >= startOfYear);
+        break;
+      case "last_year":
+        const lastYearStart = new Date(getISTYear() - 1, 0, 1);
+        const lastYearEnd = new Date(getISTYear() - 1, 11, 31, 23, 59, 59);
+        filtered = pendingPayments.filter(p => {
+          const d = new Date(p.date + 'T00:00:00');
+          return d >= lastYearStart && d <= lastYearEnd;
+        });
+        break;
+      case "all_time":
+        // No filter — show all
         break;
       case "january":
       case "february":
@@ -438,7 +462,9 @@ export default function Dashboard() {
                   { key: "yesterday", label: "Yesterday", icon: "📋" },
                   { key: "weekly", label: "This Week", icon: "📊" },
                   { key: "monthly", label: "This Month", icon: "📈" },
-                  { key: "yearly", label: "This Year", icon: "📜" }
+                  { key: "yearly", label: "This Year", icon: "📜" },
+                  { key: "last_year", label: "Last Year", icon: "🗓️" },
+                  { key: "all_time", label: "All Time", icon: "♾️" }
                 ].map(({ key, label, icon }) => (
                   <Button
                     key={key}
@@ -648,6 +674,8 @@ export default function Dashboard() {
                            selectedRange === "weekly" ? "This Week" :
                            selectedRange === "monthly" ? "This Month" :
                            selectedRange === "yearly" ? "This Year" :
+                           selectedRange === "last_year" ? "Last Year" :
+                           selectedRange === "all_time" ? "All Time" :
                            ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"].includes(selectedRange) 
                              ? `${selectedRange.charAt(0).toUpperCase() + selectedRange.slice(1)} ${selectedYear}` 
                              : "Activity"}
