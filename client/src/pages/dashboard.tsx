@@ -91,10 +91,10 @@ export default function Dashboard() {
   const getFilteredTransactions = () => {
     let filtered = selectedUser === "all" ? [...transactions] : transactions.filter(t => t.user === selectedUser);
 
-    // GLOBAL SEARCH: If there's a search query, search across ALL transactions first
+    // GLOBAL SEARCH: If there's a search query, search within the user-filtered set
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = transactions.filter(t => {
+      filtered = filtered.filter(t => {
         // Search in remark (most comprehensive)
         if (t.remark.toLowerCase().includes(query)) return true;
         
@@ -301,7 +301,7 @@ export default function Dashboard() {
       date.setDate(date.getDate() - i);
       const dateStr = getISTDateString(date);
       
-      const dayTransactions = transactions.filter(t => t.date === dateStr);
+      const dayTransactions = filteredTransactions.filter(t => t.date === dateStr);
       const cashIn = dayTransactions.filter(t => t.type === 'in').reduce((sum, t) => sum + t.amount, 0);
       const cashOut = dayTransactions.filter(t => t.type === 'out').reduce((sum, t) => sum + t.amount, 0);
       
@@ -335,8 +335,8 @@ export default function Dashboard() {
   // Smart insights
   const getSmartInsights = () => {
     const insights = [];
-    const todayTransactions = transactions.filter(t => t.date === getISTDateString());
-    const avgDailyIn = transactions.filter(t => t.type === 'in').reduce((sum, t) => sum + t.amount, 0) / Math.max(1, new Set(transactions.map(t => t.date)).size);
+    const todayTransactions = filteredTransactions.filter(t => t.date === getISTDateString());
+    const avgDailyIn = filteredTransactions.filter(t => t.type === 'in').reduce((sum, t) => sum + t.amount, 0) / Math.max(1, new Set(filteredTransactions.map(t => t.date)).size);
     
     if (summary.netBalance > 0) {
       insights.push({
