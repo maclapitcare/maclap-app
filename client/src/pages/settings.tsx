@@ -51,6 +51,7 @@ export default function Settings() {
   });
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [exportDateRange, setExportDateRange] = useState<string>("complete");
+  const [exportUser, setExportUser] = useState<"all" | "Puneet" | "Sonu">("all");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
 
@@ -279,10 +280,15 @@ export default function Settings() {
       const pendingList = pendingPayments.docs.map(doc => ({ ...doc.data() as PendingPayment }));
       const meterList = meterReadings.docs.map(doc => ({ ...doc.data() as MeterReading }));
 
-      // Filter data by selected date range
-      const filteredTransactions = filterDataByDateRange(transactionsList);
-      const filteredPending = filterDataByDateRange(pendingList);
-      const filteredMeter = filterDataByDateRange(meterList);
+      // Filter data by selected date range, then by user
+      const byDate = {
+        t: filterDataByDateRange(transactionsList),
+        p: filterDataByDateRange(pendingList),
+        m: filterDataByDateRange(meterList),
+      };
+      const filteredTransactions = exportUser === "all" ? byDate.t : byDate.t.filter((t: any) => t.user === exportUser);
+      const filteredPending    = exportUser === "all" ? byDate.p : byDate.p.filter((p: any) => p.user === exportUser);
+      const filteredMeter      = exportUser === "all" ? byDate.m : byDate.m.filter((m: any) => m.user === exportUser);
 
       // Calculate user balances
       const userBalances = calculateUserBalances(filteredTransactions);
@@ -438,7 +444,8 @@ export default function Settings() {
       const dateRangeText = exportDateRange === "complete" ? "complete" : 
                            exportDateRange === "custom" && customStartDate && customEndDate ? 
                            `${customStartDate}-to-${customEndDate}` : exportDateRange;
-      const fileName = `MacLap-Professional-Report-${dateRangeText}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const userText = exportUser === "all" ? "AllUsers" : exportUser;
+      const fileName = `MacLap-${userText}-${dateRangeText}-${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(workbook, fileName);
 
       toast({
@@ -481,10 +488,15 @@ export default function Settings() {
       const pendingList = pendingPayments.docs.map(doc => ({ ...doc.data() as PendingPayment }));
       const meterList = meterReadings.docs.map(doc => ({ ...doc.data() as MeterReading }));
 
-      // Filter data by selected date range
-      const filteredTransactions = filterDataByDateRange(transactionsList);
-      const filteredPending = filterDataByDateRange(pendingList);
-      const filteredMeter = filterDataByDateRange(meterList);
+      // Filter data by selected date range, then by user
+      const byDate = {
+        t: filterDataByDateRange(transactionsList),
+        p: filterDataByDateRange(pendingList),
+        m: filterDataByDateRange(meterList),
+      };
+      const filteredTransactions = exportUser === "all" ? byDate.t : byDate.t.filter((t: any) => t.user === exportUser);
+      const filteredPending    = exportUser === "all" ? byDate.p : byDate.p.filter((p: any) => p.user === exportUser);
+      const filteredMeter      = exportUser === "all" ? byDate.m : byDate.m.filter((m: any) => m.user === exportUser);
 
       // Calculate user balances from filtered transactions
       const userBalances = calculateUserBalances(filteredTransactions);
@@ -1228,6 +1240,40 @@ export default function Settings() {
                 <div className="mt-3 text-xs text-gray-600">
                   <span className="font-medium">Selected:</span> {getDateRangeDescription()}
                 </div>
+              </div>
+
+              {/* User Filter for Export */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center space-x-2 mb-3">
+                  <User className="text-gray-600" size={18} />
+                  <h4 className="font-medium text-gray-800">Export by User</h4>
+                </div>
+                <div className="flex gap-3">
+                  {[
+                    { key: "all", label: "👥 All Users" },
+                    { key: "Puneet", label: "🔵 Puneet" },
+                    { key: "Sonu", label: "🟢 Sonu" }
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setExportUser(key as "all" | "Puneet" | "Sonu")}
+                      className={`px-5 py-2 rounded-xl text-sm font-medium border transition-all duration-200 ${
+                        exportUser === key
+                          ? key === "Puneet"
+                            ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                            : key === "Sonu"
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-md"
+                            : "bg-purple-600 text-white border-purple-600 shadow-md"
+                          : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Exporting: <span className="font-semibold">{exportUser === "all" ? "All Users" : exportUser + " only"}</span>
+                </p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
